@@ -11,8 +11,25 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      return JSON.parse(storedUser);
+    } else {
+      const defaultAdmin = {
+        email: 'admin@gmail.com',
+        password: 'admin',
+        name: 'Admin',
+        company: 'Admin',
+        businessType: 'Farmacia',
+        phone: '123456789',
+        address: 'Calle Falsa 123',
+        role: 'admin' // Asignar rol de administrador
+      };
+      localStorage.setItem('user', JSON.stringify(defaultAdmin));
+      return defaultAdmin;
+    }
+  });  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Verificar si hay un token guardado
@@ -42,57 +59,25 @@ export const AuthProvider = ({ children }) => {
         setLoading(false)
       })
     } else {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        localStorage.setItem('token', data.data.access_token)
-        setUser(data.data.user)
-        return { success: true }
-      } else {
-        return { success: false, message: data.message }
-      }
-    } catch (error) {
-      return { success: false, message: 'Error de conexión' }
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser && storedUser.email === email && storedUser.password === password) {
+      setUser(storedUser);
+      return { success: true };
+    } else {
+      return { success: false, message: "Credenciales incorrectas" };
     }
-  }
+  };
 
   const register = async (userData) => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userData)
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        localStorage.setItem('token', data.data.access_token)
-        setUser(data.data.user)
-        return { success: true }
-      } else {
-        return { success: false, message: data.message }
-      }
-    } catch (error) {
-      return { success: false, message: 'Error de conexión' }
-    }
-  }
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+    return { success: true };
+  };
 
   const logout = () => {
     localStorage.removeItem('token')
@@ -119,4 +104,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   )
 }
-
